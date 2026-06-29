@@ -279,6 +279,6 @@ This project has direct potential for:
 
 ## 📧 Contact
 
-**Student**: [Your Name] | B.Tech CSE AIML | Batch 2021-25  
-**Guide**: [Guide Name] | [Department] | [College]
+**Student**: [Shubham Dubey] | B.Tech CSE AIML | Batch 2023-27  
+
 
