@@ -1,0 +1,5 @@
+logs/
+data/
+uploads/
+**/venv/
+**/node_modules/
