@@ -1,9 +1,5 @@
-"""
-API Router — aggregates all v1 endpoints
-"""
-
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, chat, documents, search, drafts, agents, analytics, ws
+from app.api.v1.endpoints import auth, chat, documents, search, drafts, agents, analytics, ws, evaluation
 
 api_router = APIRouter()
 
@@ -15,3 +11,4 @@ api_router.include_router(drafts.router, prefix="/drafts", tags=["Legal Drafts"]
 api_router.include_router(agents.router, prefix="/agents", tags=["Agent Control"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
 api_router.include_router(ws.router, prefix="/ws", tags=["WebSocket"])
+api_router.include_router(evaluation.router, prefix="/evaluation", tags=["Evaluation & Metrics"])

@@ -89,7 +89,7 @@ export default function AuthPage() {
             <div className="auth-logo">
               <span>⚖</span>
             </div>
-            <h1 className="auth-brand-title">LexAI</h1>
+            <h1 className="auth-brand-title">LegalAI</h1>
             <p className="auth-brand-subtitle">
               India's most advanced AI legal assistant — powered by multi-agent reasoning and comprehensive case law.
             </p>

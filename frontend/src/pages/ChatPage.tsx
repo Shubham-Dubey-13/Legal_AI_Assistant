@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { chatAPI } from '../services/api'
 import { useAuthStore } from '../store/authStore'
+import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
@@ -52,6 +53,7 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const { user } = useAuthStore()
+  const navigate = useNavigate()
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   useEffect(() => scrollToBottom(), [messages, loading])
@@ -112,7 +114,6 @@ export default function ChatPage() {
       }
       setMessages(prev => [...prev, aiMsg])
     } catch (err: any) {
-      setAgentThinking([])
       const errMsg = err?.response?.data?.detail || 'Connection error. Please check your API configuration.'
 
       // Show helpful fallback
@@ -137,6 +138,45 @@ export default function ChatPage() {
     setInput(e.target.value)
     e.target.style.height = 'auto'
     e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`
+  }
+
+  // Voice input using browser Speech Recognition API
+  const handleVoice = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      toast.error('Voice not supported in this browser. Try Chrome.')
+      return
+    }
+    const recognition = new SpeechRecognition()
+    recognition.lang = language === 'hi' ? 'hi-IN' : language === 'ta' ? 'ta-IN' : language === 'te' ? 'te-IN' : language === 'bn' ? 'bn-IN' : language === 'mr' ? 'mr-IN' : 'en-IN'
+    recognition.continuous = false
+    recognition.interimResults = false
+    toast('🎤 Listening… speak now', { duration: 3000 })
+    recognition.onresult = (e: any) => {
+      const transcript = e.results[0][0].transcript
+      setInput(transcript)
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto'
+        textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`
+      }
+      toast.success('Voice captured! Press Enter to send.')
+    }
+    recognition.onerror = () => toast.error('Could not capture voice. Try again.')
+    recognition.start()
+  }
+
+  // Toolbar button actions
+  const toolActions: Record<string, () => void> = {
+    '📄 Upload Doc':  () => navigate('/documents'),
+    '🔍 Case Search': () => navigate('/search'),
+    '✍️ Draft':       () => navigate('/drafts'),
+    '🎤 Voice':       handleVoice,
+    '🌐 Translate':   () => {
+      // Scroll language panel into view and highlight it
+      const langPanel = document.querySelector('.lang-chip') as HTMLElement
+      if (langPanel) { langPanel.closest('div')?.scrollIntoView({ behavior: 'smooth' }) }
+      toast('Select a language from the bottom-left panel ↙', { icon: '🌐', duration: 3000 })
+    },
   }
 
   const LANGS = [
@@ -309,8 +349,15 @@ export default function ChatPage() {
         {/* Input area */}
         <div className="chat-input-area">
           <div className="chat-tools">
-            {['📄 Upload Doc', '🔍 Case Search', '✍️ Draft', '🎤 Voice', '🌐 Translate'].map(tool => (
-              <button key={tool} className="tool-chip">{tool}</button>
+            {Object.keys(toolActions).map(tool => (
+              <button
+                key={tool}
+                className="tool-chip"
+                onClick={toolActions[tool]}
+                title={tool}
+              >
+                {tool}
+              </button>
             ))}
             <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
               Shift+Enter for new line

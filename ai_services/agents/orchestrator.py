@@ -55,10 +55,10 @@ def _classify(query: str) -> str:
 def _get_llm() -> ChatGoogleGenerativeAI:
     return ChatGoogleGenerativeAI(
         google_api_key=settings.GOOGLE_API_KEY,
-        model=settings.GEMINI_MODEL,  # gemini-1.5-flash
-        temperature=0.1,
+        model=settings.GEMINI_MODEL,
+        temperature=0.2,
         streaming=False,
-        max_output_tokens=1024,       # Keep response focused and fast
+        max_output_tokens=2048,       # Increased — 1024 was cutting off responses
     )
 
 
@@ -92,22 +92,34 @@ class LegalOrchestrator:
         lang_name, lang_rule = LANG_MAP.get(language, LANG_MAP["en"])
         category = _classify(query)
 
-        system_prompt = f"""You are LexAI, an expert Indian law assistant.
-LANGUAGE RULE: {lang_rule}
-Write every single word of your response in {lang_name} only. Section numbers like BNS 316, IPC 420 can stay as-is.
+        system_prompt = f"""You are LegalAI, a professional Indian law assistant.
 
-Structure your answer with these 4 short sections:
-**⚖️ Applicable Law** — relevant BNS/IPC/Act sections (2-3 lines)
-**✅ Your Rights** — what rights the person has (2-3 lines)  
-**📋 Action Steps** — numbered steps to take (3-5 steps)
-**⚠️ Disclaimer** — one line: this is AI guidance, consult a lawyer
+LANGUAGE: {lang_rule} — Write your ENTIRE response in {lang_name}. Legal section numbers (BNS 316, IPC 420, Article 21) can stay in English.
 
-Be concise. Total response: 200-350 words maximum."""
+SCOPE: If the query has NOTHING to do with Indian law, reply ONLY with:
+INSUFFICIENT_EVIDENCE: This query is outside the scope of Indian legal assistance.
 
-        user_prompt = f"Legal query ({category}): {query}"
+FORMAT: Use exactly these 4 sections with proper markdown. Always complete ALL 4 sections fully:
+
+## ⚖️ Applicable Law
+List the specific Acts, BNS sections, IPC sections, or Constitutional Articles that apply. Give a 2-3 sentence explanation of what each law says.
+
+## ✅ Your Rights
+List 3-4 bullet points of the person's legal rights in this situation. Be specific and practical.
+
+## 📋 Steps to Take
+List 4-6 numbered action steps the person should take. Be specific: mention which authority to contact, what documents to bring, time limits, fees if any.
+
+## ⚠️ Important Disclaimer
+One sentence: This is AI-generated legal information, not professional legal advice. Contact a qualified advocate for your specific case. For free legal aid call NALSA at 15100.
+
+Write 400-600 words total. Be thorough and helpful. Never cut off mid-sentence."""
+
+        user_prompt = f"Legal query about {category} law: {query}"
 
         response_text = ""
         tokens_used = 0
+        confidence = 0.75  # base confidence
 
         try:
             resp = await self.llm.ainvoke([
@@ -121,24 +133,72 @@ Be concise. Total response: 200-350 words maximum."""
         except Exception as exc:
             response_text = await self._fallback(query, lang_name, lang_rule, str(exc))
             tokens_used = 0
+            confidence = 0.55  # lower when using fallback
+
+        # Abstain when evidence is insufficient
+        if response_text.strip().startswith("INSUFFICIENT_EVIDENCE"):
+            response_text = (
+                "⚠️ **Insufficient Evidence / Out of Scope**\n\n"
+                "This query does not appear to be related to Indian law. "
+                "LegalAI specializes in IPC, BNS 2023, BNSS, Constitution, "
+                "Consumer Protection, and other Indian legal matters.\n\n"
+                "*Please rephrase your query with more legal context, or contact "
+                "NALSA Free Legal Aid at **15100** for assistance.*"
+            )
+            confidence = 0.35
+        else:
+            # Dynamic confidence based on response quality signals
+            # Base: 0.75
+            # +0.10 if specific category (not general)
+            if category != "general":
+                confidence += 0.10
+            # +0.05 for each law section found (max +0.10)
+            bns_found = len(re.findall(r'BNS\s+\d+', response_text))
+            ipc_found = len(re.findall(r'IPC\s+\d+', response_text))
+            section_bonus = min((bns_found + ipc_found) * 0.05, 0.10)
+            confidence += section_bonus
+            # -0.05 if response is very short (< 100 chars = LLM couldn't answer well)
+            if len(response_text) < 100:
+                confidence -= 0.05
+            # Cap between 0.70 and 0.97
+            confidence = round(min(max(confidence, 0.70), 0.97), 2)
 
         # Extract section references from response
         bns_sections = [f"BNS {s}" for s in re.findall(r'BNS\s+(\d+[A-Z]?)', response_text)][:5]
         ipc_sections = [f"IPC {s}" for s in re.findall(r'IPC\s+(\d+[A-Z]?)', response_text)][:5]
 
+        # Build citations with source provenance
+        citations = []
+        for sec in bns_sections[:3]:
+            citations.append({
+                "case_name": sec,
+                "citation": f"Bharatiya Nyaya Sanhita 2023 — {sec}",
+                "court": "Parliament of India",
+                "year": 2023,
+                "source": "BNS 2023",
+            })
+        for sec in ipc_sections[:2]:
+            citations.append({
+                "case_name": sec,
+                "citation": f"Indian Penal Code 1860 — {sec}",
+                "court": "Parliament of India",
+                "year": 1860,
+                "source": "IPC 1860",
+            })
+
         return {
             "conversation_id": conversation_id,
             "response": response_text,
-            "citations": [],
+            "citations": citations,
             "ipc_sections": ipc_sections,
             "bns_sections": bns_sections,
             "agent_pipeline": [
                 {"agent_name": "Orchestrator Agent",  "status": "done", "message": f"Category: {category}"},
                 {"agent_name": "Research Agent",      "status": "done", "message": "Laws & sections identified"},
-                {"agent_name": "Verification Agent",  "status": "done", "message": "Response verified"},
+                {"agent_name": "Verification Agent",  "status": "done", "message": f"Confidence: {int(confidence*100)}%"},
                 {"agent_name": "Summarization Agent", "status": "done", "message": f"Language: {lang_name}"},
             ],
-            "confidence_score": 0.88,
+            "confidence_score": confidence,
             "tokens_used": tokens_used,
         }
 

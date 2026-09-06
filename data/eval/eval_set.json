@@ -1,0 +1,361 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-09-06",
+    "total_questions": 50,
+    "categories": ["criminal", "constitutional", "consumer", "family", "property", "cyber", "labor", "general"],
+    "description": "Curated evaluation set for LegalAI retrieval and citation accuracy measurement"
+  },
+  "eval_set": [
+    {
+      "id": "Q001", "category": "criminal",
+      "question": "What is BNS Section 316 and how does it replace IPC 420?",
+      "expected_sections": ["BNS 316", "IPC 420"],
+      "expected_keywords": ["cheating", "dishonestly", "inducing", "delivery", "property"],
+      "ground_truth": "BNS Section 316 corresponds to IPC Section 420 which deals with cheating and dishonestly inducing delivery of property. The punishment is imprisonment up to 7 years and fine."
+    },
+    {
+      "id": "Q002", "category": "criminal",
+      "question": "What are the legal steps to file an FIR for cybercrime?",
+      "expected_sections": ["IT Act 66", "BNS 318"],
+      "expected_keywords": ["FIR", "police station", "cybercrime cell", "complaint"],
+      "ground_truth": "File FIR at local police station or cybercrime cell. Cognizable offences under IT Act Section 66 and BNS. Provide evidence: screenshots, transaction records."
+    },
+    {
+      "id": "Q003", "category": "criminal",
+      "question": "What is the punishment for murder under BNS 2023?",
+      "expected_sections": ["BNS 101", "IPC 302"],
+      "expected_keywords": ["death", "imprisonment for life", "rarest of rare"],
+      "ground_truth": "BNS Section 101 (replacing IPC 302) prescribes death or life imprisonment for murder, plus fine. Death only in rarest of rare cases per Bachan Singh v. State of Punjab."
+    },
+    {
+      "id": "Q004", "category": "criminal",
+      "question": "How to apply for anticipatory bail under BNSS 2023?",
+      "expected_sections": ["BNSS 482", "CrPC 438"],
+      "expected_keywords": ["anticipatory bail", "Sessions Court", "High Court", "apprehension of arrest"],
+      "ground_truth": "File application in Sessions Court or High Court under BNSS Section 482 (formerly CrPC 438) apprehending arrest. Court considers nature of accusation, antecedents, possibility of fleeing."
+    },
+    {
+      "id": "Q005", "category": "criminal",
+      "question": "What rights do I have when police arrest me without a warrant?",
+      "expected_sections": ["Article 22", "BNSS 47"],
+      "expected_keywords": ["grounds of arrest", "lawyer", "magistrate", "24 hours"],
+      "ground_truth": "Article 22 guarantees right to know grounds of arrest, right to legal representation, and production before magistrate within 24 hours. BNSS Section 47 governs arrest procedure."
+    },
+    {
+      "id": "Q006", "category": "criminal",
+      "question": "What is the punishment for domestic violence and dowry harassment?",
+      "expected_sections": ["IPC 498A", "BNS 85", "Domestic Violence Act"],
+      "expected_keywords": ["cruelty", "dowry", "husband", "3 years"],
+      "ground_truth": "BNS Section 85 (IPC 498A) punishes husband/relatives for cruelty with imprisonment up to 3 years and fine. Domestic Violence Act 2005 provides civil remedies including protection orders."
+    },
+    {
+      "id": "Q007", "category": "constitutional",
+      "question": "What is Article 21 and what rights does it protect?",
+      "expected_sections": ["Article 21"],
+      "expected_keywords": ["right to life", "personal liberty", "procedure established by law"],
+      "ground_truth": "Article 21: No person shall be deprived of life or personal liberty except by procedure established by law. Expanded to include right to dignity, livelihood, health, education per Maneka Gandhi v. UoI."
+    },
+    {
+      "id": "Q008", "category": "constitutional",
+      "question": "What are Fundamental Rights under the Indian Constitution?",
+      "expected_sections": ["Article 12", "Article 13", "Article 14", "Article 19", "Article 21"],
+      "expected_keywords": ["equality", "freedom", "religion", "exploitation", "constitutional remedies"],
+      "ground_truth": "Fundamental Rights (Articles 12-35): Right to Equality (14-18), Right to Freedom (19-22), Right against Exploitation (23-24), Right to Religion (25-28), Cultural rights (29-30), Right to Constitutional Remedies (32)."
+    },
+    {
+      "id": "Q009", "category": "constitutional",
+      "question": "How to file a writ petition in High Court?",
+      "expected_sections": ["Article 226", "Article 32"],
+      "expected_keywords": ["habeas corpus", "mandamus", "certiorari", "prohibition", "quo warranto"],
+      "ground_truth": "File writ petition under Article 226 in High Court or Article 32 in Supreme Court. Types: Habeas Corpus (illegal detention), Mandamus (public duty), Certiorari (quash orders), Prohibition, Quo Warranto."
+    },
+    {
+      "id": "Q010", "category": "consumer",
+      "question": "How to file a consumer complaint against Amazon for defective product?",
+      "expected_sections": ["Consumer Protection Act 35", "Consumer Protection Act 2019"],
+      "expected_keywords": ["District Commission", "complaint", "deficiency in service", "unfair trade practice"],
+      "ground_truth": "File complaint in District Consumer Disputes Redressal Commission (up to Rs 1 crore claims) under Consumer Protection Act 2019. Provide purchase proof, defect evidence, and prior complaint to seller."
+    },
+    {
+      "id": "Q011", "category": "consumer",
+      "question": "What is the time limit to file a consumer complaint?",
+      "expected_sections": ["Consumer Protection Act 69"],
+      "expected_keywords": ["2 years", "limitation", "sufficient cause"],
+      "ground_truth": "Under Section 69, complaint must be filed within 2 years from cause of action. Commission can condone delay if sufficient cause is shown."
+    },
+    {
+      "id": "Q012", "category": "consumer",
+      "question": "What compensation can I get in a consumer case?",
+      "expected_sections": ["Consumer Protection Act 39"],
+      "expected_keywords": ["refund", "replacement", "compensation", "punitive damages"],
+      "ground_truth": "District/State/National Commission can order: refund, repair/replacement, compensation for loss/injury, punitive damages for reckless disregard, and litigation costs."
+    },
+    {
+      "id": "Q013", "category": "family",
+      "question": "What are the grounds for divorce under Hindu Marriage Act?",
+      "expected_sections": ["Hindu Marriage Act 13"],
+      "expected_keywords": ["adultery", "cruelty", "desertion", "mental disorder", "mutual consent"],
+      "ground_truth": "Hindu Marriage Act Section 13 grounds: adultery, cruelty, desertion (2+ years), conversion, mental disorder, leprosy, venereal disease, renunciation, presumption of death. Mutual consent under 13B."
+    },
+    {
+      "id": "Q014", "category": "family",
+      "question": "How is child custody decided after divorce?",
+      "expected_sections": ["Guardians and Wards Act 17", "Hindu Minority Act 6"],
+      "expected_keywords": ["welfare of child", "best interest", "custody", "visitation"],
+      "ground_truth": "Courts consider welfare/best interest of child as paramount. Mother generally gets custody of children under 5. Father has natural guardianship. Courts may grant joint custody."
+    },
+    {
+      "id": "Q015", "category": "family",
+      "question": "What is the legal process for maintenance after separation?",
+      "expected_sections": ["CrPC 125", "BNSS 144", "Hindu Adoption Act 18"],
+      "expected_keywords": ["maintenance", "wife", "children", "parents", "magistrate"],
+      "ground_truth": "BNSS Section 144 (formerly CrPC 125): Magistrate can order maintenance for wife, children, parents who cannot maintain themselves. Court considers income, needs, and lifestyle standard."
+    },
+    {
+      "id": "Q016", "category": "property",
+      "question": "What legal action can I take if my landlord is illegally evicting me?",
+      "expected_sections": ["Transfer of Property Act", "Rent Control Act"],
+      "expected_keywords": ["eviction notice", "Rent Control", "civil court", "injunction"],
+      "ground_truth": "Landlord must follow due process: valid eviction notice, valid legal grounds (non-payment, personal need). File injunction in civil court. State Rent Control Acts provide additional protection."
+    },
+    {
+      "id": "Q017", "category": "property",
+      "question": "How to register a property sale agreement?",
+      "expected_sections": ["Registration Act 17", "Transfer of Property Act 54"],
+      "expected_keywords": ["stamp duty", "sub-registrar", "registration", "sale deed"],
+      "ground_truth": "Property sale above Rs 100 must be registered under Registration Act. Execute sale deed, pay stamp duty (state-specific), register at Sub-Registrar's office with witnesses and ID proof."
+    },
+    {
+      "id": "Q018", "category": "cyber",
+      "question": "What is the law for online fraud in India?",
+      "expected_sections": ["IT Act 66D", "BNS 318", "IPC 420"],
+      "expected_keywords": ["cheating", "online fraud", "cybercrime", "imprisonment", "fine"],
+      "ground_truth": "IT Act Section 66D: cheating by personation using computer/internet, punishable up to 3 years and Rs 1 lakh fine. BNS 318 (IPC 420) also applies. Report to cybercrime.gov.in."
+    },
+    {
+      "id": "Q019", "category": "cyber",
+      "question": "What to do if someone is blackmailing me online?",
+      "expected_sections": ["IT Act 67A", "BNS 351", "IPC 503"],
+      "expected_keywords": ["blackmail", "cyber extortion", "report", "evidence"],
+      "ground_truth": "IT Act 67A (obscene material), BNS 351 (criminal intimidation). Preserve evidence: screenshots. Report to cybercrime.gov.in or nearest police station. Do not pay the extortionist."
+    },
+    {
+      "id": "Q020", "category": "labor",
+      "question": "What can I do if my employer is not paying salary?",
+      "expected_sections": ["Payment of Wages Act 15", "Industrial Disputes Act"],
+      "expected_keywords": ["salary", "wages", "labour court", "claim", "complaint"],
+      "ground_truth": "File complaint with Payment of Wages Authority or Labour Commissioner. Can also approach Labour Court under Industrial Disputes Act. File complaint within 1 year of due date."
+    },
+    {
+      "id": "Q021", "category": "labor",
+      "question": "What is the procedure for wrongful termination claim?",
+      "expected_sections": ["Industrial Disputes Act 25F", "Industrial Disputes Act 11A"],
+      "expected_keywords": ["retrenchment", "notice", "compensation", "labour court", "reinstatement"],
+      "ground_truth": "Termination without notice or compensation for 1+ year employees violates ID Act Section 25F. File complaint with Labour Court for reinstatement or compensation. Notice: 1 month or pay in lieu."
+    },
+    {
+      "id": "Q022", "category": "criminal",
+      "question": "What is the difference between bailable and non-bailable offences?",
+      "expected_sections": ["BNSS 478", "CrPC 436", "CrPC 437"],
+      "expected_keywords": ["bailable", "non-bailable", "bail as right", "discretion of court"],
+      "ground_truth": "Bailable offences: bail is a right, police officer can grant bail. Non-bailable: bail at court's discretion, consider gravity, criminal antecedents, flight risk. First Schedule BNSS lists classification."
+    },
+    {
+      "id": "Q023", "category": "constitutional",
+      "question": "What is Right to Information (RTI) and how to file an RTI application?",
+      "expected_sections": ["RTI Act 6", "RTI Act 7"],
+      "expected_keywords": ["public authority", "information", "30 days", "Public Information Officer"],
+      "ground_truth": "RTI Act 2005: Citizen can request information from Public Authorities. File application to Public Information Officer with Rs 10 fee. Response within 30 days. Appeal to First Appellate Authority then CIC/SIC."
+    },
+    {
+      "id": "Q024", "category": "criminal",
+      "question": "What are the rights of an accused person in India?",
+      "expected_sections": ["Article 20", "Article 21", "Article 22", "BNSS 47"],
+      "expected_keywords": ["self-incrimination", "double jeopardy", "legal aid", "speedy trial"],
+      "ground_truth": "Constitutional rights: protection against self-incrimination (Art 20), right to life/liberty (Art 21), rights on arrest (Art 22). Right to free legal aid, speedy trial, know charges, bail hearing."
+    },
+    {
+      "id": "Q025", "category": "consumer",
+      "question": "What is the difference between District, State, and National Consumer Commissions?",
+      "expected_sections": ["Consumer Protection Act 34", "Consumer Protection Act 47", "Consumer Protection Act 58"],
+      "expected_keywords": ["District Commission", "State Commission", "NCDRC", "pecuniary jurisdiction"],
+      "ground_truth": "District Commission: up to Rs 1 crore. State Commission: Rs 1 crore to Rs 10 crore. NCDRC (National): above Rs 10 crore. Complaints filed based on claim value."
+    },
+    {
+      "id": "Q026", "category": "general",
+      "question": "What is Lok Adalat and how does it help in dispute resolution?",
+      "expected_sections": ["Legal Services Authorities Act 19", "Legal Services Authorities Act 21"],
+      "expected_keywords": ["Lok Adalat", "settlement", "award", "no appeal", "free"],
+      "ground_truth": "Lok Adalat: alternative dispute resolution forum under Legal Services Authorities Act. Awards are final (no appeal), cases settled amicably. No court fees. Covers motor accident, matrimonial, labour disputes."
+    },
+    {
+      "id": "Q027", "category": "criminal",
+      "question": "What is the POCSO Act and what protection does it provide to children?",
+      "expected_sections": ["POCSO Act 4", "POCSO Act 6", "POCSO Act 19"],
+      "expected_keywords": ["sexual offences", "children", "mandatory reporting", "special court"],
+      "ground_truth": "POCSO Act 2012 protects children under 18 from sexual offences. Mandatory reporting by all (Section 19). Special courts for trial. Penetrative assault: minimum 10 years (Sec 4). Aggravated: minimum 20 years (Sec 6)."
+    },
+    {
+      "id": "Q028", "category": "labor",
+      "question": "What are the PF and gratuity rights of an employee?",
+      "expected_sections": ["EPF Act 12", "Payment of Gratuity Act 4"],
+      "expected_keywords": ["PF", "gratuity", "5 years", "employer contribution", "15 days salary"],
+      "ground_truth": "EPF: 12% employee + 12% employer contribution mandatory for establishments with 20+ employees. Gratuity: 15 days salary per year after 5 years service under Payment of Gratuity Act."
+    },
+    {
+      "id": "Q029", "category": "cyber",
+      "question": "What is the law regarding data privacy in India?",
+      "expected_sections": ["IT Act 43A", "Digital Personal Data Protection Act 2023"],
+      "expected_keywords": ["personal data", "consent", "data breach", "data fiduciary"],
+      "ground_truth": "Digital Personal Data Protection Act 2023 governs data privacy. IT Act 43A: body corporates must maintain reasonable security for sensitive personal data. Penalties for breaches."
+    },
+    {
+      "id": "Q030", "category": "property",
+      "question": "What is the Benami Transactions Act and how does it affect property ownership?",
+      "expected_sections": ["Benami Transactions Act 2"],
+      "expected_keywords": ["benami", "beneficial owner", "benamidar", "confiscation"],
+      "ground_truth": "Benami Transactions (Prohibition) Act 1988: property held in another's name but financed by someone else is benami. Punishable with 7 years imprisonment. Property can be confiscated by government."
+    },
+    {
+      "id": "Q031", "category": "criminal",
+      "question": "What is cognizable and non-cognizable offence?",
+      "expected_sections": ["BNSS 2(1)(d)", "CrPC 2(c)"],
+      "expected_keywords": ["cognizable", "non-cognizable", "arrest without warrant", "magistrate permission"],
+      "ground_truth": "Cognizable offence: police can arrest without warrant (murder, rape, robbery). Non-cognizable: police need magistrate's order to investigate (assault, fraud). First Schedule of BNSS lists classification."
+    },
+    {
+      "id": "Q032", "category": "family",
+      "question": "What are the legal rights of a woman in a live-in relationship?",
+      "expected_sections": ["Domestic Violence Act 2", "IPC 498A"],
+      "expected_keywords": ["live-in", "domestic relationship", "maintenance", "protection"],
+      "ground_truth": "Supreme Court has held live-in relationships akin to marriage under Domestic Violence Act. Women can claim maintenance and protection orders. Children born are legitimate. No specific law for live-in marriage rights."
+    },
+    {
+      "id": "Q033", "category": "labor",
+      "question": "What is the Sexual Harassment of Women at Workplace Act?",
+      "expected_sections": ["POSH Act 4", "POSH Act 11"],
+      "expected_keywords": ["Internal Complaints Committee", "sexual harassment", "workplace", "inquiry"],
+      "ground_truth": "Prevention of Sexual Harassment (POSH) Act 2013: Employers with 10+ employees must form Internal Complaints Committee. Complaints investigated within 90 days. Penalties for employer non-compliance."
+    },
+    {
+      "id": "Q034", "category": "criminal",
+      "question": "What is the process of filing a private complaint in Magistrate's court?",
+      "expected_sections": ["BNSS 223", "CrPC 200"],
+      "expected_keywords": ["private complaint", "Magistrate", "examination", "cognizance"],
+      "ground_truth": "File complaint before Judicial Magistrate under BNSS Section 223. Magistrate examines complainant and witnesses on oath. If satisfied, can take cognizance and issue summons/warrant."
+    },
+    {
+      "id": "Q035", "category": "consumer",
+      "question": "Can I file a consumer complaint against a hospital for medical negligence?",
+      "expected_sections": ["Consumer Protection Act 2019", "Indian Medical Council Act"],
+      "expected_keywords": ["medical negligence", "deficiency in service", "consumer forum", "compensation"],
+      "ground_truth": "Medical services are 'services' under Consumer Protection Act. Patients can file complaints for medical negligence (deficiency in service) before District/State/National Commission and seek compensation."
+    },
+    {
+      "id": "Q036", "category": "general",
+      "question": "What is the process to get free legal aid in India?",
+      "expected_sections": ["Legal Services Authorities Act 12"],
+      "expected_keywords": ["NALSA", "free legal aid", "eligible", "panel lawyer"],
+      "ground_truth": "Free legal aid under Legal Services Authorities Act: available to women, SC/ST, persons with disability, those earning under Rs 1 lakh/year. Contact NALSA (15100) or District Legal Services Authority."
+    },
+    {
+      "id": "Q037", "category": "criminal",
+      "question": "What is the zero FIR and how is it different from a regular FIR?",
+      "expected_sections": ["BNSS 173", "CrPC 154"],
+      "expected_keywords": ["zero FIR", "jurisdiction", "any police station", "transfer"],
+      "ground_truth": "Zero FIR: registered at any police station regardless of jurisdiction. Regular FIR: must be filed in jurisdictional police station. BNSS Section 173 mandates registration. Zero FIR transferred to appropriate station."
+    },
+    {
+      "id": "Q038", "category": "cyber",
+      "question": "What is the punishment for hacking under IT Act?",
+      "expected_sections": ["IT Act 66", "IT Act 43"],
+      "expected_keywords": ["unauthorized access", "hacking", "3 years", "5 lakh"],
+      "ground_truth": "IT Act Section 66: unauthorized access to computer/network, imprisonment up to 3 years or fine up to Rs 5 lakh, or both. Section 43: civil liability for damage to computer, compensation up to Rs 1 crore."
+    },
+    {
+      "id": "Q039", "category": "property",
+      "question": "What is adverse possession and can I claim ownership of land I have occupied for years?",
+      "expected_sections": ["Limitation Act 65", "Transfer of Property Act"],
+      "expected_keywords": ["adverse possession", "12 years", "continuous possession", "title"],
+      "ground_truth": "Adverse possession: continuous, open, hostile occupation for 12 years can give title under Limitation Act Section 65. Must file declaratory suit to get legal title recognized by court."
+    },
+    {
+      "id": "Q040", "category": "general",
+      "question": "What is a power of attorney and how to create one?",
+      "expected_sections": ["Powers of Attorney Act 1882", "Registration Act 17"],
+      "expected_keywords": ["power of attorney", "principal", "agent", "notarized", "registration"],
+      "ground_truth": "Power of Attorney authorizes agent to act on principal's behalf. General POA: multiple acts. Special POA: specific transaction. Execute on stamp paper, notarize. Registration required for immovable property transactions."
+    },
+    {
+      "id": "Q041", "category": "criminal",
+      "question": "What is sedition law in India and what replaced it?",
+      "expected_sections": ["IPC 124A", "BNS 152"],
+      "expected_keywords": ["sedition", "BNS 152", "sovereignty", "integrity"],
+      "ground_truth": "IPC Section 124A (sedition) has been replaced by BNS Section 152 which penalizes acts endangering sovereignty, unity and integrity of India. Punishment: life imprisonment to 7 years and fine."
+    },
+    {
+      "id": "Q042", "category": "constitutional",
+      "question": "What is the scope of freedom of speech under Article 19?",
+      "expected_sections": ["Article 19(1)(a)", "Article 19(2)"],
+      "expected_keywords": ["freedom of speech", "reasonable restrictions", "sovereignty", "public order"],
+      "ground_truth": "Article 19(1)(a): right to freedom of speech and expression. Subject to reasonable restrictions under 19(2): sovereignty, integrity, security, friendly relations with foreign states, public order, decency, contempt of court, defamation."
+    },
+    {
+      "id": "Q043", "category": "labor",
+      "question": "What is the Maternity Benefit Act and how many weeks of leave am I entitled to?",
+      "expected_sections": ["Maternity Benefit Act 5"],
+      "expected_keywords": ["26 weeks", "maternity leave", "12 weeks", "adoption"],
+      "ground_truth": "Maternity Benefit Act 1961 (amended 2017): 26 weeks paid maternity leave for first two children, 12 weeks for subsequent. Adoption/commissioning mothers: 12 weeks. Establishments with 50+ employees must provide creche."
+    },
+    {
+      "id": "Q044", "category": "consumer",
+      "question": "What is an unfair trade practice under Consumer Protection Act?",
+      "expected_sections": ["Consumer Protection Act 2(47)"],
+      "expected_keywords": ["unfair trade practice", "false representation", "misleading advertisement"],
+      "ground_truth": "Consumer Protection Act defines unfair trade practices: false representations about goods/services, misleading advertisements, offering gifts with hidden conditions, hoarding, and deceptive pricing practices."
+    },
+    {
+      "id": "Q045", "category": "family",
+      "question": "What is the inheritance right of a daughter under Hindu law?",
+      "expected_sections": ["Hindu Succession Act 6"],
+      "expected_keywords": ["daughter", "coparcenary", "equal rights", "2005 amendment"],
+      "ground_truth": "Hindu Succession (Amendment) Act 2005: daughters have equal coparcenary rights as sons in ancestral property. Supreme Court in Vineeta Sharma (2020) held this applies even if father died before 2005."
+    },
+    {
+      "id": "Q046", "category": "criminal",
+      "question": "What is plea bargaining and when can it be used?",
+      "expected_sections": ["BNSS 289", "CrPC 265A"],
+      "expected_keywords": ["plea bargaining", "mutually satisfactory disposition", "private complaint", "seven years"],
+      "ground_truth": "BNSS Chapter XXVII (CrPC Chapter XXIA): plea bargaining for offences with punishment up to 7 years (not socio-economic offences or against women/children). Accused pleads guilty, court gives reduced sentence."
+    },
+    {
+      "id": "Q047", "category": "property",
+      "question": "What is RERA and how does it protect home buyers?",
+      "expected_sections": ["RERA Act 11", "RERA Act 18"],
+      "expected_keywords": ["Real Estate Regulatory Authority", "builder", "possession", "compensation", "registration"],
+      "ground_truth": "Real Estate (Regulation and Development) Act 2016: Builders must register projects with RERA. Mandatory disclosure of project details. Buyers entitled to compensation for delay in possession. File complaints with RERA authority."
+    },
+    {
+      "id": "Q048", "category": "cyber",
+      "question": "What is the law on cyberbullying and online harassment in India?",
+      "expected_sections": ["IT Act 66A", "BNS 351", "BNS 79"],
+      "expected_keywords": ["cyberbullying", "harassment", "stalking", "online"],
+      "ground_truth": "BNS Section 79 (cyberstalking), Section 351 (criminal intimidation). IT Act Section 66A (partly struck down by SC). File FIR at cybercrime cell or cybercrime.gov.in. Gather evidence: screenshots, timestamps."
+    },
+    {
+      "id": "Q049", "category": "general",
+      "question": "What is the National Green Tribunal and what cases can it hear?",
+      "expected_sections": ["NGT Act 14"],
+      "expected_keywords": ["environment", "NGT", "pollution", "forest", "compensation"],
+      "ground_truth": "National Green Tribunal Act 2010: NGT hears substantial questions relating to environment, forests, wildlife, biodiversity, water, air, pollution cases. Can award compensation and restoration orders. Appeals to Supreme Court."
+    },
+    {
+      "id": "Q050", "category": "criminal",
+      "question": "What is the difference between IPC and BNS 2023?",
+      "expected_sections": ["BNS 2023", "IPC 1860"],
+      "expected_keywords": ["replaced", "renumbered", "modernized", "2023", "BNS"],
+      "ground_truth": "BNS (Bharatiya Nyaya Sanhita) 2023 replaced IPC 1860. Key changes: sections renumbered, organized crime added (BNS 111), terrorism defined, sedition replaced with BNS 152, death penalty for mob lynching. More comprehensive."
+    }
+  ]
+}
