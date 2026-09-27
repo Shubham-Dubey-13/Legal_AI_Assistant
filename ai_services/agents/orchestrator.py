@@ -86,11 +86,24 @@ class LegalOrchestrator:
         language: str = "en",
         document_ids: List[str] = None,
         agent_mode: str = "auto",
+        conversation_history: list = None,
     ) -> Dict[str, Any]:
 
         conversation_id = conversation_id or str(uuid.uuid4())
         lang_name, lang_rule = LANG_MAP.get(language, LANG_MAP["en"])
         category = _classify(query)
+
+        # Build optional conversation context block from the last 3 messages
+        context_block = ""
+        if conversation_history:
+            recent = conversation_history[-3:]
+            lines = ["CONVERSATION CONTEXT (last messages for follow-up understanding):"]
+            for msg in recent:
+                role = msg.get("role", "user").capitalize()
+                content = msg.get("content", "")
+                summary = content[:200] + ("…" if len(content) > 200 else "")
+                lines.append(f"{role}: {summary}")
+            context_block = "\n".join(lines) + "\n\n"
 
         system_prompt = f"""You are LegalAI, a professional Indian law assistant.
 
@@ -99,7 +112,7 @@ LANGUAGE: {lang_rule} — Write your ENTIRE response in {lang_name}. Legal secti
 SCOPE: If the query has NOTHING to do with Indian law, reply ONLY with:
 INSUFFICIENT_EVIDENCE: This query is outside the scope of Indian legal assistance.
 
-FORMAT: Use exactly these 4 sections with proper markdown. Always complete ALL 4 sections fully:
+{context_block}FORMAT: Use exactly these 4 sections with proper markdown. Always complete ALL 4 sections fully:
 
 ## ⚖️ Applicable Law
 List the specific Acts, BNS sections, IPC sections, or Constitutional Articles that apply. Give a 2-3 sentence explanation of what each law says.

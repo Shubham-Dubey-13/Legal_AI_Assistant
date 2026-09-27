@@ -11,6 +11,7 @@ import AnalyticsPage from './pages/AnalyticsPage'
 import AgentsPage from './pages/AgentsPage'
 import PredictionPage from './pages/PredictionPage'
 import AuthPage from './pages/AuthPage'
+import LawyerFinderPage from './pages/LawyerFinderPage'
 
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -44,6 +45,7 @@ export default function App() {
       <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
       <Route path="/agents" element={<ProtectedRoute><AgentsPage /></ProtectedRoute>} />
       <Route path="/prediction" element={<ProtectedRoute><PredictionPage /></ProtectedRoute>} />
+      <Route path="/lawyer-finder" element={<ProtectedRoute><LawyerFinderPage /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   )

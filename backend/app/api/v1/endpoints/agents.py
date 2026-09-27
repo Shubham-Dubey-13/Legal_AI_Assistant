@@ -3,8 +3,13 @@ Agent control, status monitoring, and judgment prediction endpoints
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
 from app.schemas.schemas import JudgmentPredictionRequest, JudgmentPredictionResponse
 from app.core.security import get_current_user
+from app.core.database import get_db
+from app.models.models import AgentLog
 import uuid
 from datetime import datetime
 
@@ -16,14 +21,14 @@ async def get_agent_status(current_user: dict = Depends(get_current_user)):
     """Get real-time status of all agents"""
     return {
         "agents": [
-            {"name": "Orchestrator Agent", "status": "online", "model": "gpt-4o", "role": "Master coordinator"},
-            {"name": "Research Agent", "status": "online", "model": "gpt-4o", "role": "Legal research & web search"},
-            {"name": "Retrieval Agent", "status": "online", "model": "text-embedding-3-large", "role": "RAG-based case retrieval"},
-            {"name": "Verification Agent", "status": "online", "model": "gpt-4o", "role": "Fact-checking & hallucination reduction"},
-            {"name": "Summarization Agent", "status": "online", "model": "gpt-4o", "role": "PDF summarization"},
-            {"name": "Drafting Agent", "status": "online", "model": "gpt-4o", "role": "Legal document generation"},
-            {"name": "Citation Agent", "status": "online", "model": "gpt-4o", "role": "Citation extraction & formatting"},
-            {"name": "Memory Agent", "status": "online", "model": "ChromaDB", "role": "Conversation memory"},
+            {"name": "Orchestrator Agent",  "status": "online", "model": "gemini-1.5-flash",       "role": "Master coordinator"},
+            {"name": "Research Agent",       "status": "online", "model": "gemini-1.5-flash",       "role": "Legal research & web search"},
+            {"name": "Retrieval Agent",      "status": "online", "model": "text-embedding-3-large", "role": "RAG-based case retrieval"},
+            {"name": "Verification Agent",   "status": "online", "model": "gemini-1.5-flash",       "role": "Fact-checking & hallucination reduction"},
+            {"name": "Summarization Agent",  "status": "online", "model": "gemini-1.5-flash",       "role": "PDF summarization"},
+            {"name": "Drafting Agent",        "status": "online", "model": "gemini-1.5-flash",       "role": "Legal document generation"},
+            {"name": "Citation Agent",        "status": "online", "model": "gemini-1.5-flash",       "role": "Citation extraction & formatting"},
+            {"name": "Memory Agent",          "status": "online", "model": "ChromaDB",               "role": "Conversation memory"},
         ],
         "total_agents": 8,
         "system_status": "all_online",
@@ -37,12 +42,12 @@ async def predict_judgment(
 ):
     """
     ML-powered judgment outcome prediction.
-    
+
     Uses:
     - Fine-tuned Legal-BERT for case classification
     - XGBoost for outcome prediction
     - Similar case retrieval via semantic search
-    - GPT-4o for reasoning generation
+    - Gemini for reasoning generation
     """
     from ai_services.ml.judgment_predictor import JudgmentPredictor
     predictor = JudgmentPredictor()
@@ -81,17 +86,43 @@ async def autonomous_research(
 
 
 @router.get("/pipeline-trace/{query_id}")
-async def get_pipeline_trace(query_id: str, current_user: dict = Depends(get_current_user)):
-    """Get detailed execution trace for a query through the agent pipeline"""
+async def get_pipeline_trace(
+    query_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get detailed execution trace for a query through the agent pipeline — sourced from AgentLog table."""
+    result = await db.execute(
+        select(AgentLog)
+        .where(AgentLog.query_id == query_id)
+        .order_by(AgentLog.created_at.asc())
+    )
+    logs = result.scalars().all()
+
+    if not logs:
+        return {
+            "query_id": query_id,
+            "pipeline_steps": [],
+            "total_time_ms": 0,
+            "message": "No agent logs found for this query_id.",
+        }
+
+    pipeline_steps = [
+        {
+            "step": idx + 1,
+            "agent": log.agent_name,
+            "action": (log.input_data or {}).get("action", "Processing"),
+            "status": log.status,
+            "duration_ms": log.execution_time_ms,
+            "error": log.error,
+        }
+        for idx, log in enumerate(logs)
+    ]
+
+    total_time_ms = sum(log.execution_time_ms for log in logs)
+
     return {
         "query_id": query_id,
-        "pipeline_steps": [
-            {"step": 1, "agent": "Orchestrator", "action": "Query classification", "duration_ms": 120},
-            {"step": 2, "agent": "Retrieval Agent", "action": "ChromaDB hybrid search", "duration_ms": 340},
-            {"step": 3, "agent": "Research Agent", "action": "Indian Kanoon API call", "duration_ms": 890},
-            {"step": 4, "agent": "Verification Agent", "action": "Citation validation", "duration_ms": 210},
-            {"step": 5, "agent": "Citation Agent", "action": "Format citations", "duration_ms": 90},
-            {"step": 6, "agent": "Memory Agent", "action": "Store in conversation history", "duration_ms": 45},
-        ],
-        "total_time_ms": 1695,
+        "pipeline_steps": pipeline_steps,
+        "total_time_ms": total_time_ms,
     }

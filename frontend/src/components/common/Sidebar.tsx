@@ -9,6 +9,7 @@ const navItems = [
   { to: '/prediction', icon: '🔮', label: 'Judgment AI', badge: 'ML' },
   { to: '/agents', icon: '🤖', label: 'Agents', badge: '8' },
   { to: '/analytics', icon: '📊', label: 'Analytics', badge: null },
+  { to: '/lawyer-finder', icon: '🗺️', label: 'Lawyer Finder', badge: null },
 ]
 
 export default function Sidebar() {
@@ -43,7 +44,7 @@ export default function Sidebar() {
         <div className="nav-item" style={{ cursor: 'default', gap: '8px' }}>
           <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
             🔗 LangChain · LangGraph<br />
-            📦 ChromaDB · GPT-4o<br />
+            📦 ChromaDB · Gemini 3.5 Flash<br />
             🐍 FastAPI · PostgreSQL
           </span>
         </div>

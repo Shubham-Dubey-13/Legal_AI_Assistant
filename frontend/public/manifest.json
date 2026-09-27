@@ -1,0 +1,13 @@
+{
+  "name": "LegalAI — Indian Law Assistant",
+  "short_name": "LegalAI",
+  "description": "AI-powered legal guidance for Indian citizens",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1117",
+  "theme_color": "#f59e0b",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

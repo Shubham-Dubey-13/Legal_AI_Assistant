@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -18,6 +18,13 @@ interface Message {
   bns_sections?: string[]
   agent_pipeline?: any[]
   confidence_score?: number
+}
+
+interface Conversation {
+  id: string
+  title: string
+  created_at: string
+  updated_at?: string
 }
 
 const SUGGESTED_QUERIES = [
@@ -43,6 +50,10 @@ const AGENT_EMOJIS: Record<string, string> = {
   'Direct LLM': '⚡',
 }
 
+const LANG_MAP: Record<string, string> = {
+  en: 'en-IN', hi: 'hi-IN', ta: 'ta-IN', te: 'te-IN', bn: 'bn-IN', mr: 'mr-IN',
+}
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -50,6 +61,10 @@ export default function ChatPage() {
   const [thinkingStep, setThinkingStep] = useState(0)
   const [language, setLanguage] = useState('en')
   const [conversationId, setConversationId] = useState<string | null>(null)
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [convsLoading, setConvsLoading] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const { user } = useAuthStore()
@@ -72,6 +87,44 @@ export default function ChatPage() {
     const interval = setInterval(() => setThinkingStep(s => (s + 1) % THINKING_STEPS.length), 1800)
     return () => clearInterval(interval)
   }, [loading])
+
+  // Load past conversations on mount
+  const loadConversations = useCallback(async () => {
+    setConvsLoading(true)
+    try {
+      const { data } = await chatAPI.conversations()
+      setConversations(Array.isArray(data) ? data : data?.conversations || [])
+    } catch {
+      // silently fail — backend may not have this endpoint yet
+    } finally {
+      setConvsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { loadConversations() }, [loadConversations])
+
+  // Load a conversation's history
+  const loadConversation = async (conv: Conversation) => {
+    if (loading) return
+    try {
+      const { data } = await chatAPI.history(conv.id)
+      const msgs: Message[] = (data?.messages || data || []).map((m: any) => ({
+        id: m.id || m.message_id || String(Math.random()),
+        role: m.role,
+        content: m.content,
+        timestamp: new Date(m.timestamp || m.created_at || Date.now()),
+        citations: m.citations,
+        ipc_sections: m.ipc_sections,
+        bns_sections: m.bns_sections,
+        agent_pipeline: m.agent_pipeline,
+        confidence_score: m.confidence_score,
+      }))
+      setMessages(msgs)
+      setConversationId(conv.id)
+    } catch {
+      toast.error('Could not load conversation history.')
+    }
+  }
 
   const handleSend = async (queryText?: string) => {
     const q = queryText || input.trim()
@@ -99,7 +152,11 @@ export default function ChatPage() {
         include_citations: true,
       })
 
-      if (!conversationId) setConversationId(data.conversation_id)
+      if (!conversationId) {
+        setConversationId(data.conversation_id)
+        // refresh sidebar list
+        loadConversations()
+      }
 
       const aiMsg: Message = {
         id: data.message_id,
@@ -116,7 +173,6 @@ export default function ChatPage() {
     } catch (err: any) {
       const errMsg = err?.response?.data?.detail || 'Connection error. Please check your API configuration.'
 
-      // Show helpful fallback
       const fallbackMsg: Message = {
         id: Date.now().toString(),
         role: 'assistant',
@@ -140,7 +196,7 @@ export default function ChatPage() {
     e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`
   }
 
-  // Voice input using browser Speech Recognition API
+  // ── Voice INPUT (speech recognition) ─────────────────────────────────
   const handleVoice = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SpeechRecognition) {
@@ -148,7 +204,7 @@ export default function ChatPage() {
       return
     }
     const recognition = new SpeechRecognition()
-    recognition.lang = language === 'hi' ? 'hi-IN' : language === 'ta' ? 'ta-IN' : language === 'te' ? 'te-IN' : language === 'bn' ? 'bn-IN' : language === 'mr' ? 'mr-IN' : 'en-IN'
+    recognition.lang = LANG_MAP[language] || 'en-IN'
     recognition.continuous = false
     recognition.interimResults = false
     toast('🎤 Listening… speak now', { duration: 3000 })
@@ -165,6 +221,44 @@ export default function ChatPage() {
     recognition.start()
   }
 
+  // ── Voice OUTPUT (TTS) ────────────────────────────────────────────────
+  const handleSpeak = (msg: Message) => {
+    if (!window.speechSynthesis) {
+      toast.error('Text-to-speech not supported in this browser.')
+      return
+    }
+    if (speakingMsgId === msg.id) {
+      // Already speaking this message — stop it
+      window.speechSynthesis.cancel()
+      setSpeakingMsgId(null)
+      return
+    }
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(msg.content)
+    utterance.lang = LANG_MAP[language] || 'en-IN'
+    utterance.onend = () => setSpeakingMsgId(null)
+    utterance.onerror = () => setSpeakingMsgId(null)
+    setSpeakingMsgId(msg.id)
+    window.speechSynthesis.speak(utterance)
+  }
+
+  // ── PDF / Text export ─────────────────────────────────────────────────
+  const handleExport = async () => {
+    if (!conversationId) return
+    try {
+      const response = await chatAPI.exportPdf(conversationId)
+      const url = URL.createObjectURL(new Blob([response.data]))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'legal_report.txt'
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success('Report downloaded!')
+    } catch {
+      toast.error('Export failed. Try again.')
+    }
+  }
+
   // Toolbar button actions
   const toolActions: Record<string, () => void> = {
     '📄 Upload Doc':  () => navigate('/documents'),
@@ -172,7 +266,6 @@ export default function ChatPage() {
     '✍️ Draft':       () => navigate('/drafts'),
     '🎤 Voice':       handleVoice,
     '🌐 Translate':   () => {
-      // Scroll language panel into view and highlight it
       const langPanel = document.querySelector('.lang-chip') as HTMLElement
       if (langPanel) { langPanel.closest('div')?.scrollIntoView({ behavior: 'smooth' }) }
       toast('Select a language from the bottom-left panel ↙', { icon: '🌐', duration: 3000 })
@@ -198,19 +291,68 @@ export default function ChatPage() {
             ✚ New Consultation
           </button>
         </div>
+
         <div style={{ padding: '0.75rem', flex: 1, overflowY: 'auto' }}>
-          <div className="nav-section-label">Quick Queries</div>
-          {SUGGESTED_QUERIES.map((q, i) => (
-            <div key={i}
-              className="nav-item"
-              style={{ fontSize: '0.72rem', lineHeight: 1.4, marginBottom: 4, cursor: 'pointer' }}
-              onClick={() => handleSend(q)}
+          {/* ── Past Conversations ── */}
+          <div className="nav-section-label">Recent Conversations</div>
+          {convsLoading && (
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', padding: '4px 0' }}>Loading…</div>
+          )}
+          {!convsLoading && conversations.length === 0 && (
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', padding: '4px 0' }}>
+              No conversations yet. Start a new one!
+            </div>
+          )}
+          {conversations.map(conv => (
+            <div
+              key={conv.id}
+              className={`nav-item${conversationId === conv.id ? ' active' : ''}`}
+              style={{ fontSize: '0.72rem', lineHeight: 1.4, marginBottom: 4, cursor: 'pointer', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}
+              onClick={() => loadConversation(conv)}
             >
-              <span>💬</span>
-              <span style={{ overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{q}</span>
+              <span style={{ overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', fontWeight: conversationId === conv.id ? 600 : 400 }}>
+                💬 {conv.title || 'Untitled Conversation'}
+              </span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                {conv.updated_at || conv.created_at
+                  ? format(new Date(conv.updated_at || conv.created_at), 'dd MMM, HH:mm')
+                  : ''}
+              </span>
             </div>
           ))}
+
+          {/* ── Quick Queries (collapsed secondary section) ── */}
+          <div
+            className="nav-section-label"
+            style={{ marginTop: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+            onClick={() => setShowSuggestions(s => !s)}
+          >
+            <span>Quick Queries</span>
+            <span style={{ fontSize: '0.6rem' }}>{showSuggestions ? '▲' : '▼'}</span>
+          </div>
+          <AnimatePresence initial={false}>
+            {showSuggestions && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                style={{ overflow: 'hidden' }}
+              >
+                {SUGGESTED_QUERIES.map((q, i) => (
+                  <div key={i}
+                    className="nav-item"
+                    style={{ fontSize: '0.72rem', lineHeight: 1.4, marginBottom: 4, cursor: 'pointer' }}
+                    onClick={() => handleSend(q)}
+                  >
+                    <span>💬</span>
+                    <span style={{ overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{q}</span>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
+
         {/* Language selector */}
         <div style={{ padding: '0.75rem', borderTop: '1px solid var(--border)' }}>
           <div className="nav-section-label">Response Language</div>
@@ -232,12 +374,12 @@ export default function ChatPage() {
         <div className="chat-messages">
           {messages.length === 0 && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="hero" style={{ padding: '2rem 1rem' }}>
-              <div className="hero-badge">🤖 8 AI Agents · RAG Pipeline · GPT-4o</div>
+              <div className="hero-badge">🤖 8 AI Agents · RAG Pipeline · Gemini 3.5 Flash</div>
               <h1 style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>
                 India's Most Advanced<br />Legal AI Assistant
               </h1>
               <p className="hero-sub" style={{ fontSize: '0.9rem' }}>
-                Powered by LangGraph multi-agent orchestration, ChromaDB RAG, and GPT-4o.
+                Powered by LangGraph multi-agent orchestration, ChromaDB RAG, and Gemini 3.5 Flash.
                 Get instant guidance on IPC, BNS, Constitution, Consumer law, and 50+ Indian acts.
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: '2rem' }}>
@@ -255,6 +397,30 @@ export default function ChatPage() {
                 ))}
               </div>
             </motion.div>
+          )}
+
+          {/* ── Export button in chat header area ── */}
+          {conversationId && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0.4rem 0.5rem 0' }}>
+              <button
+                onClick={handleExport}
+                title="Download conversation as report"
+                style={{
+                  background: 'rgba(245,158,11,0.1)',
+                  border: '1px solid rgba(245,158,11,0.3)',
+                  borderRadius: 'var(--radius-md)',
+                  color: '#f59e0b',
+                  fontSize: '0.75rem',
+                  padding: '4px 10px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                }}
+              >
+                ⬇️ Export Report
+              </button>
+            </div>
           )}
 
           {messages.map((msg) => (
@@ -312,7 +478,30 @@ export default function ChatPage() {
                     </div>
                   )}
                 </div>
-                <div className="message-time">{format(msg.timestamp, 'HH:mm')}</div>
+
+                {/* Bottom row: timestamp + TTS button (AI only) */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                  <div className="message-time">{format(msg.timestamp, 'HH:mm')}</div>
+                  {msg.role === 'assistant' && (
+                    <button
+                      onClick={() => handleSpeak(msg)}
+                      title={speakingMsgId === msg.id ? 'Stop speaking' : 'Read aloud'}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem',
+                        padding: '2px 4px',
+                        borderRadius: 4,
+                        color: speakingMsgId === msg.id ? '#f59e0b' : 'var(--text-muted)',
+                        animation: speakingMsgId === msg.id ? 'agentPulse 1.5s infinite' : 'none',
+                        transition: 'color 0.2s',
+                      }}
+                    >
+                      🔊
+                    </button>
+                  )}
+                </div>
               </div>
             </motion.div>
           ))}

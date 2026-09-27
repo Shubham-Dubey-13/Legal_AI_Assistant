@@ -31,6 +31,9 @@ export const chatAPI = {
   query: (data: any) => api.post('/chat/query', data, { timeout: 90000 }),
   history: (id: string) => api.get(`/chat/conversations/${id}/history`),
   delete: (id: string) => api.delete(`/chat/conversations/${id}`),
+  conversations: () => api.get('/chat/conversations'),
+  exportPdf: (conversationId: string) =>
+    api.get(`/chat/conversations/${conversationId}/export-pdf`, { responseType: 'blob' }),
 }
 
 // Documents
