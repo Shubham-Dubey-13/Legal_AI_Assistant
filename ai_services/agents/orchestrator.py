@@ -160,21 +160,52 @@ Write 400-600 words total. Be thorough and helpful. Never cut off mid-sentence."
             )
             confidence = 0.35
         else:
-            # Dynamic confidence based on response quality signals
-            # Base: 0.75
-            # +0.10 if specific category (not general)
-            if category != "general":
-                confidence += 0.10
-            # +0.05 for each law section found (max +0.10)
-            bns_found = len(re.findall(r'BNS\s+\d+', response_text))
-            ipc_found = len(re.findall(r'IPC\s+\d+', response_text))
-            section_bonus = min((bns_found + ipc_found) * 0.05, 0.10)
-            confidence += section_bonus
-            # -0.05 if response is very short (< 100 chars = LLM couldn't answer well)
-            if len(response_text) < 100:
-                confidence -= 0.05
-            # Cap between 0.70 and 0.97
-            confidence = round(min(max(confidence, 0.70), 0.97), 2)
+            # ── Dynamic confidence — scored across 5 independent signals ──────
+            score = 0.0
+
+            # Signal 1: Category specificity (max 0.20)
+            category_weights = {
+                "criminal": 0.20, "constitutional": 0.20, "consumer": 0.18,
+                "family": 0.18,   "cyber": 0.17,          "property": 0.16,
+                "labour": 0.16,   "civil": 0.14,          "general": 0.06,
+            }
+            score += category_weights.get(category, 0.10)
+
+            # Signal 2: Law section density in response (max 0.25)
+            bns_hits  = len(re.findall(r'BNS\s+\d+',     response_text))
+            ipc_hits  = len(re.findall(r'IPC\s+\d+',     response_text))
+            art_hits  = len(re.findall(r'Article\s+\d+', response_text))
+            act_hits  = len(re.findall(r'Act[,\s]+\d{4}',response_text))
+            total_refs = bns_hits + ipc_hits + art_hits + act_hits
+            score += min(total_refs * 0.05, 0.25)
+
+            # Signal 3: Response completeness / length (max 0.25)
+            rlen = len(response_text)
+            if rlen > 2000:   score += 0.25
+            elif rlen > 1200: score += 0.20
+            elif rlen > 600:  score += 0.14
+            elif rlen > 300:  score += 0.08
+            else:             score += 0.02   # too short = low confidence
+
+            # Signal 4: Structural quality — has all 4 expected sections (max 0.20)
+            headings_found = sum([
+                1 if "Applicable Law"  in response_text else 0,
+                1 if "Your Rights"     in response_text or "Rights" in response_text else 0,
+                1 if "Steps"           in response_text or "Action" in response_text else 0,
+                1 if "Disclaimer"      in response_text else 0,
+            ])
+            score += headings_found * 0.05   # 0.05 per section, max 0.20
+
+            # Signal 5: Query specificity — longer, more specific queries answered better (max 0.10)
+            words_in_query = len(query.split())
+            if words_in_query > 15:   score += 0.10
+            elif words_in_query > 8:  score += 0.07
+            elif words_in_query > 4:  score += 0.04
+            else:                     score += 0.01
+
+            # Base floor 0.55, cap at 0.97
+            confidence = round(min(max(0.55 + score, 0.65), 0.97), 2)
+
 
         # Extract section references from response
         bns_sections = [f"BNS {s}" for s in re.findall(r'BNS\s+(\d+[A-Z]?)', response_text)][:5]
