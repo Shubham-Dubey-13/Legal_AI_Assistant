@@ -9,6 +9,7 @@ from sqlalchemy import select, func
 
 from app.core.security import get_current_user
 from app.core.database import get_db
+from app.core.utils import get_user_id
 from app.models.models import Message, LegalDocument, LegalDraft, Conversation
 
 router = APIRouter()
@@ -19,7 +20,7 @@ async def get_dashboard(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    user_id = current_user.get("user_id") or current_user.get("id") or current_user.get("sub")
+    user_id = get_user_id(current_user)
 
     # ── total_queries: assistant messages for this user ──────────────────────
     q_queries = (

@@ -19,6 +19,34 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Response interceptor for global error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status
+    const isAuthRoute = error?.config?.url?.includes('/auth/')
+
+    if (!error.response) {
+      // Network error — backend not running
+      error.userMessage = '🔌 Cannot connect to server. Make sure the backend is running: cd backend && uvicorn app.main:app --reload --port 8000'
+    } else if (status === 401 && !isAuthRoute) {
+      // Token expired — clear and redirect
+      try {
+        const stored = localStorage.getItem('legal-ai-auth')
+        if (stored) { localStorage.removeItem('legal-ai-auth'); window.location.href = '/auth' }
+      } catch {}
+      error.userMessage = '🔑 Session expired. Please log in again.'
+    } else if (status === 500) {
+      error.userMessage = '⚠️ Server error. Please try again in a moment.'
+    } else if (status === 504) {
+      error.userMessage = '⏳ Request timed out. The AI is taking longer than usual — please try again.'
+    } else if (status === 429) {
+      error.userMessage = '🚦 Too many requests. Please wait a moment before trying again.'
+    }
+    return Promise.reject(error)
+  }
+)
+
 // Auth
 export const authAPI = {
   register: (data: any) => api.post('/auth/register', data),

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 
@@ -24,6 +25,20 @@ export default function Header() {
   const { user } = useAuthStore()
   const info = pageInfo[location.pathname] || { title: 'LegalAI', desc: '', icon: '⚖️' }
 
+  const [backendOnline, setBackendOnline] = useState(true)
+
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const r = await fetch('http://localhost:8000/health', { signal: AbortSignal.timeout(3000) })
+        setBackendOnline(r.ok)
+      } catch { setBackendOnline(false) }
+    }
+    check() // immediate
+    const id = setInterval(check, 30000)
+    return () => clearInterval(id)
+  }, [])
+
   return (
     <header className="header">
       <div className="header-title">
@@ -31,6 +46,11 @@ export default function Header() {
         {info.desc && <p>{info.desc}</p>}
       </div>
       <div className="header-actions">
+        {/* Backend status indicator */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.7rem', padding: '3px 8px', borderRadius: 20, background: backendOnline ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${backendOnline ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: backendOnline ? '#10b981' : '#ef4444' }} />
+          <span style={{ color: backendOnline ? '#34d399' : '#fca5a5' }}>{backendOnline ? 'API Online' : 'Backend Offline'}</span>
+        </div>
         {/* Language chip */}
         <div style={{ display: 'flex', gap: 6 }}>
           {LANGUAGES.slice(0,3).map(lang => (

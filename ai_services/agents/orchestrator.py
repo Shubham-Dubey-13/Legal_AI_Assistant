@@ -133,20 +133,30 @@ Write 400-600 words total. Be thorough and helpful. Never cut off mid-sentence."
         response_text = ""
         tokens_used = 0
         confidence = 0.75  # base confidence
+        last_exc = None
 
-        try:
-            resp = await self.llm.ainvoke([
-                SystemMessage(content=system_prompt),
-                HumanMessage(content=user_prompt),
-            ])
-            response_text = _to_str(resp.content)
-            meta = getattr(resp, "usage_metadata", None)
-            if isinstance(meta, dict):
-                tokens_used = meta.get("total_tokens", 0)
-        except Exception as exc:
-            response_text = await self._fallback(query, lang_name, lang_rule, str(exc))
+        # Retry up to 2 times with 1s backoff before falling back
+        for attempt in range(2):
+            try:
+                resp = await self.llm.ainvoke([
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=user_prompt),
+                ])
+                response_text = _to_str(resp.content)
+                meta = getattr(resp, "usage_metadata", None)
+                if isinstance(meta, dict):
+                    tokens_used = meta.get("total_tokens", 0)
+                last_exc = None
+                break  # success — stop retrying
+            except Exception as exc:
+                last_exc = exc
+                if attempt == 0:
+                    await asyncio.sleep(1.0)  # wait 1s before retry
+
+        if last_exc is not None:
+            response_text = await self._fallback(query, lang_name, lang_rule, str(last_exc))
             tokens_used = 0
-            confidence = 0.55  # lower when using fallback
+            confidence = 0.55
 
         # Abstain when evidence is insufficient
         if response_text.strip().startswith("INSUFFICIENT_EVIDENCE"):

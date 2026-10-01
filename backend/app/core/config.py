@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     # File Storage
     UPLOAD_DIR: str = "./uploads"
     MAX_FILE_SIZE_MB: int = 50
+    MAX_UPLOAD_SIZE_MB: int = 20
 
     # Celery
     CELERY_BROKER_URL: str = "redis://localhost:6379/1"
