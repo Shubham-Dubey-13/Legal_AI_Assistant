@@ -19,7 +19,7 @@ async def get_dashboard(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    user_id = current_user["id"]
+    user_id = current_user.get("user_id") or current_user.get("id") or current_user.get("sub")
 
     # ── total_queries: assistant messages for this user ──────────────────────
     q_queries = (
