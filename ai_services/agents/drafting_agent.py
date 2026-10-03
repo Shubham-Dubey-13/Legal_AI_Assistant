@@ -23,8 +23,8 @@ DRAFT_PROMPTS = {
     "fir": """You are a legal drafting expert. Draft a professional First Information Report (FIR) for the Indian Police.
 
 DETAILS:
-- Complainant: {parties.get('complainant', 'Not provided')}
-- Accused: {parties.get('accused', 'Unknown person')}
+- Complainant: {complainant}
+- Accused: {accused}
 - Incident Description: {description}
 - Facts: {facts}
 
@@ -43,8 +43,8 @@ Use formal language. Reference applicable BNS/IPC sections.""",
     "legal_notice": """Draft a formal Legal Notice as per Indian law standards.
 
 DETAILS:
-- Sender: {parties.get('sender', 'Not provided')}
-- Recipient: {parties.get('recipient', 'Not provided')}  
+- Sender: {sender}
+- Recipient: {recipient}
 - Subject: {description}
 - Relief Sought: {relief_sought}
 - Facts: {facts}
@@ -54,7 +54,7 @@ Structure:
 2. "LEGAL NOTICE" heading
 3. Introduction identifying the parties
 4. Detailed facts and grievances
-5. Legal basis (relevant acts and sections)
+5. Legal basis (relevant acts and sections): {sections}
 6. Specific demands/reliefs
 7. Time limit (15/30 days)
 8. Consequence of non-compliance
@@ -65,8 +65,8 @@ Make it legally precise and professional.""",
     "petition": """Draft a Writ Petition / Civil Petition for Indian courts.
 
 DETAILS:
-- Petitioner: {parties.get('petitioner', 'Petitioner')}
-- Respondent: {parties.get('respondent', 'Respondent')}
+- Petitioner: {petitioner}
+- Respondent: {respondent}
 - Case Description: {description}
 - Facts: {facts}
 - Relief Sought: {relief_sought}
@@ -79,7 +79,7 @@ WRIT PETITION NO. ___ OF {year}
 2. Jurisdiction
 3. Facts of the Case (numbered paragraphs)
 4. Grounds for Petition
-5. Constitutional/Statutory Provisions Violated
+5. Constitutional/Statutory Provisions Violated: {sections}
 6. Earlier Proceedings (if any)
 7. Prayer/Relief Sought
 8. Verification
@@ -88,7 +88,7 @@ WRIT PETITION NO. ___ OF {year}
     "affidavit": """Draft an Affidavit as per Indian legal requirements.
 
 DETAILS:
-- Deponent: {parties.get('deponent', 'Deponent')}
+- Deponent: {deponent}
 - Subject: {description}
 - Statements: {facts}
 
@@ -98,28 +98,29 @@ AFFIDAVIT
 I, [Name], aged [age], residing at [address], do hereby solemnly affirm and state as follows:
 
 1. I am the deponent herein...
-2. [Numbered statements]
+2. [Numbered statements based on facts provided]
 3. I say that the contents of this affidavit are true to my knowledge...
 
 DEPONENT
 
-Sworn/Affirmed before me this [date] day of [month] [year]
+Sworn/Affirmed before me this [date] day of [month] {year}
 NOTARY PUBLIC / OATH COMMISSIONER""",
 
     "bail_application": """Draft a Bail Application for Indian criminal courts.
 
 DETAILS:
-- Accused: {parties.get('accused', 'Accused')}
+- Accused: {accused}
 - FIR Details: {facts}
 - Grounds for Bail: {relief_sought}
 - Case Description: {description}
+- Applicable Sections: {sections}
 
 Structure:
 IN THE COURT OF SESSIONS JUDGE / CHIEF JUDICIAL MAGISTRATE
 BAIL APPLICATION NO. ___ OF {year}
 
 IN THE MATTER OF:
-[State/Complainant] vs. [Accused]
+[State/Complainant] vs. {accused}
 
 APPLICATION FOR BAIL UNDER SECTION 480 BNSS (formerly 437/439 CrPC)
 
@@ -163,6 +164,15 @@ class DraftingAgent:
         parties = parties or {}
         year = datetime.datetime.now().year
 
+        # Pre-extract common party fields so templates can use simple {name} placeholders
+        p_complainant  = parties.get("complainant",  "Complainant")
+        p_accused      = parties.get("accused",      "Accused / Unknown person")
+        p_sender       = parties.get("sender",       parties.get("complainant", "Sender"))
+        p_recipient    = parties.get("recipient",    parties.get("accused",     "Recipient"))
+        p_petitioner   = parties.get("petitioner",   parties.get("complainant", "Petitioner"))
+        p_respondent   = parties.get("respondent",   parties.get("accused",     "Respondent"))
+        p_deponent     = parties.get("deponent",     parties.get("complainant", "Deponent"))
+
         # Get relevant sections
         from ai_services.agents.research_agent import ResearchAgent
         research = ResearchAgent()
@@ -179,7 +189,13 @@ Current year: {year}"""
         if draft_type in DRAFT_PROMPTS:
             template = DRAFT_PROMPTS[draft_type]
             user_prompt = template.format(
-                parties=parties,
+                complainant=p_complainant,
+                accused=p_accused,
+                sender=p_sender,
+                recipient=p_recipient,
+                petitioner=p_petitioner,
+                respondent=p_respondent,
+                deponent=p_deponent,
                 description=description,
                 facts=facts,
                 relief_sought=relief_sought,
