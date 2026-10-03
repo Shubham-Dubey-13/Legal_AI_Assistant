@@ -6,8 +6,8 @@
 [![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-green?logo=fastapi)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react)](https://reactjs.org)
-[![Gemini](https://img.shields.io/badge/Gemini-2.5_Flash-orange?logo=google)](https://ai.google.dev)
-[![ChromaDB](https://img.shields.io/badge/ChromaDB-Vector_DB-red)](https://chromadb.com)
+[![Gemini](https://img.shields.io/badge/Gemini-3.5_Flash-orange?logo=google)](https://ai.google.dev)
+[![SQLite](https://img.shields.io/badge/SQLite-Async-blue?logo=sqlite)](https://sqlite.org)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue?logo=docker)](https://docker.com)
 [![GitHub](https://img.shields.io/badge/GitHub-Shubham--Dubey--13-black?logo=github)](https://github.com/Shubham-Dubey-13/Legal_AI_Assistant)
 
@@ -41,7 +41,7 @@ User Query (8 Indian Languages)
    FastAPI Backend  ←──── JWT Auth (bcrypt)
         │
         ▼
-  Orchestrator Agent (Gemini 2.5 Flash)
+  Orchestrator Agent (Gemini 3.5 Flash)
         │
    ┌────┴──────────────────────────────────┐
    │                                       │
@@ -76,11 +76,11 @@ Research Agent                    Retrieval Agent
 
 | Agent | Technology | Responsibility |
 |-------|-----------|----------------|
-| **Orchestrator** | Gemini 2.5 Flash | Routes queries, classifies intent, synthesizes output |
+| **Orchestrator** | Gemini 3.5 Flash | Routes queries, classifies intent, synthesizes output |
 | **Research** | LangChain + IPC/BNS Map | Identifies applicable sections, case law |
 | **Retrieval** | ChromaDB + BM25 + RRF | Hybrid semantic + keyword search |
 | **Verification** | Rule-based + LLM critique | Validates sections, computes confidence score |
-| **Summarization** | Gemini 2.5 Flash | Condenses retrieved evidence, summarizes PDFs |
+| **Summarization** | Gemini 3.5 Flash | Condenses retrieved evidence, summarizes PDFs |
 | **Drafting** | Template + LLM | Generates FIR, notice, petition, affidavit |
 | **Citation** | Regex + SCC/AIR patterns | Formats Indian legal citations |
 | **Memory** | SQLite + Context Manager | Persists conversation history per user |
@@ -117,7 +117,7 @@ Reciprocal Rank Fusion (RRF merging)
 Verification Agent (confidence scoring)
       │
       ▼
-Gemini 2.5 Flash (grounded generation)
+Gemini 3.5 Flash (grounded generation)
       │
       ▼
 Citation Agent (SCC/AIR format)
@@ -198,7 +198,7 @@ Legal_AI_Assistant/
 │   │   ├── models/models.py       # SQLAlchemy: User, Conversation, Message,
 │   │   │                          #             LegalDocument, LegalDraft, AgentLog
 │   │   ├── core/security.py       # JWT + bcrypt (direct, no passlib bug)
-│   │   └── core/config.py         # Settings: Gemini 2.5 Flash
+│   │   └── core/config.py         # Settings: Gemini 3.5 Flash
 │   └── Dockerfile                 # Python 3.11 + Tesseract OCR
 │
 ├── ai_services/                   # AI/ML pipeline
@@ -285,9 +285,9 @@ curl http://localhost:8000/api/v1/evaluation/metrics \
 | Layer | Technology |
 |-------|-----------|
 | **Frontend** | React 18, TypeScript, Vite, Zustand, Framer Motion |
-| **Backend** | FastAPI, Python 3.11, SQLAlchemy, Pydantic v2 |
+| **Backend** | FastAPI, Python 3.12, SQLAlchemy, Pydantic v2 |
 | **Database** | SQLite (dev) / PostgreSQL (prod), ChromaDB (vectors) |
-| **AI** | Google Gemini 2.5 Flash, LangChain, Google Embeddings |
+| **AI** | Google Gemini 3.5 Flash, LangChain 4.x |
 | **Retrieval** | ChromaDB (dense), rank-bm25 (sparse), RRF merging |
 | **Document AI** | PyMuPDF, pdfplumber, Tesseract OCR |
 | **Auth** | JWT (python-jose), bcrypt |
