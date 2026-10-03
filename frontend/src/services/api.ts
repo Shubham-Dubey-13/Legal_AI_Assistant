@@ -52,6 +52,8 @@ export const authAPI = {
   register: (data: any) => api.post('/auth/register', data),
   login: (data: any) => api.post('/auth/login', data),
   me: () => api.get('/auth/me'),
+  changePassword: (data: { current_password: string; new_password: string }) =>
+    api.post('/auth/change-password', data),
 }
 
 // Chat
@@ -62,6 +64,7 @@ export const chatAPI = {
   conversations: () => api.get('/chat/conversations'),
   exportPdf: (conversationId: string) =>
     api.get(`/chat/conversations/${conversationId}/export-pdf`, { responseType: 'blob' }),
+  shareChatLink: (conversationId: string) => api.post(`/chat/conversations/${conversationId}/share`),
 }
 
 // Documents

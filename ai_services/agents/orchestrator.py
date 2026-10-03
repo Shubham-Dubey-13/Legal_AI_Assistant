@@ -1,6 +1,6 @@
 """
 ORCHESTRATOR — Fast single-call legal assistant.
-Uses gemini-1.5-flash with a concise prompt for 3-8s responses.
+Uses gemini-3.5-flash (or model from GEMINI_MODEL env var).
 Language is fully enforced in system + user prompt.
 """
 

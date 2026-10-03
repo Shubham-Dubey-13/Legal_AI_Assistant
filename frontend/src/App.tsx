@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
 import Sidebar from './components/common/Sidebar'
@@ -12,6 +13,8 @@ import AgentsPage from './pages/AgentsPage'
 import PredictionPage from './pages/PredictionPage'
 import AuthPage from './pages/AuthPage'
 import LawyerFinderPage from './pages/LawyerFinderPage'
+import SettingsPage from './pages/SettingsPage'
+import SharedChatPage from './pages/SharedChatPage'
 
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -32,7 +35,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, theme } = useAuthStore()
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
 
   return (
     <Routes>
@@ -46,6 +53,8 @@ export default function App() {
       <Route path="/agents" element={<ProtectedRoute><AgentsPage /></ProtectedRoute>} />
       <Route path="/prediction" element={<ProtectedRoute><PredictionPage /></ProtectedRoute>} />
       <Route path="/lawyer-finder" element={<ProtectedRoute><LawyerFinderPage /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+      <Route path="/shared/:conversationId" element={<SharedChatPage />} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   )

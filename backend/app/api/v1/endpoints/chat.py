@@ -3,14 +3,14 @@ Chat Endpoint — routes user queries through the multi-agent orchestrator.
 All messages are persisted to the database.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse, Response
 from app.schemas.schemas import ChatRequest, ChatResponse
 from app.core.security import get_current_user
 from app.core.database import get_db
 from app.models.models import Conversation, Message
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from datetime import datetime, timezone
 import asyncio, json, time, uuid
 
@@ -160,14 +160,28 @@ async def chat_stream(
 
 @router.get("/conversations")
 async def list_conversations(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, le=100),
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """List all conversations for the current user."""
+    """List all conversations for the current user with pagination."""
+    user_id = current_user.get("user_id") or current_user.get("id")
+    # Count total
+    count_q = await db.execute(
+        select(func.count(Conversation.id)).where(
+            Conversation.user_id == user_id,
+            Conversation.is_active == True,
+        )
+    )
+    total = count_q.scalar_one()
+    # Fetch page
     result = await db.execute(
         select(Conversation)
-        .where(Conversation.user_id == current_user["user_id"], Conversation.is_active == True)
+        .where(Conversation.user_id == user_id, Conversation.is_active == True)
         .order_by(Conversation.updated_at.desc())
+        .offset(skip)
+        .limit(limit)
     )
     convs = result.scalars().all()
     return {
@@ -180,7 +194,10 @@ async def list_conversations(
             }
             for c in convs
         ],
-        "total": len(convs),
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "has_more": (skip + limit) < total,
     }
 
 
@@ -342,3 +359,76 @@ async def export_conversation_pdf(
         media_type="text/plain",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.post("/conversations/{conversation_id}/share")
+async def share_conversation(
+    conversation_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate a shareable read-only link valid for 24 hours."""
+    from jose import jwt
+    from datetime import datetime, timedelta, timezone
+    from app.core.config import settings
+
+    user_id = current_user.get("user_id") or current_user.get("id")
+    result = await db.execute(
+        select(Conversation).where(Conversation.id == conversation_id, Conversation.user_id == user_id)
+    )
+    conv = result.scalar_one_or_none()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    expire = datetime.now(timezone.utc) + timedelta(hours=24)
+    token = jwt.encode(
+        {"conv_id": conversation_id, "type": "share", "exp": expire},
+        settings.SECRET_KEY,
+        algorithm="HS256",
+    )
+    return {
+        "share_url": f"http://localhost:5173/shared/{conversation_id}?token={token}",
+        "expires_in": "24 hours",
+        "conversation_id": conversation_id,
+    }
+
+
+@router.get("/shared/{conversation_id}")
+async def get_shared_conversation(
+    conversation_id: str,
+    token: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Public endpoint — read a shared conversation by token. No auth required."""
+    from jose import jwt, JWTError
+    from app.core.config import settings
+
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        if payload.get("conv_id") != conversation_id or payload.get("type") != "share":
+            raise HTTPException(status_code=403, detail="Invalid share token")
+    except JWTError:
+        raise HTTPException(status_code=403, detail="Expired or invalid share token")
+
+    result = await db.execute(select(Conversation).where(Conversation.id == conversation_id))
+    conv = result.scalar_one_or_none()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    msgs_result = await db.execute(
+        select(Message).where(Message.conversation_id == conversation_id).order_by(Message.created_at)
+    )
+    messages = msgs_result.scalars().all()
+    return {
+        "conversation_id": conversation_id,
+        "title": conv.title,
+        "messages": [
+            {
+                "role": m.role,
+                "content": m.content,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            }
+            for m in messages
+        ],
+        "shared": True,
+    }

@@ -3,14 +3,14 @@ Legal Document Upload and Analysis Endpoints
 All endpoints read/write from the real database.
 """
 
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, BackgroundTasks, Query
 from app.schemas.schemas import DocumentUploadResponse, DocumentAnalysisResponse
 from app.core.security import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.models import LegalDocument, DocumentStatus
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 import uuid, os, datetime
 
 router = APIRouter()
@@ -117,14 +117,25 @@ async def process_document_background(
 
 @router.get("/", summary="List all user documents")
 async def list_documents(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, le=100),
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """List all documents uploaded by the current user."""
+    """List all documents uploaded by the current user with pagination."""
+    user_id = current_user.get("user_id") or current_user.get("id")
+    # Count total
+    count_q = await db.execute(
+        select(func.count(LegalDocument.id)).where(LegalDocument.user_id == user_id)
+    )
+    total = count_q.scalar_one()
+    # Fetch page
     result = await db.execute(
         select(LegalDocument)
-        .where(LegalDocument.user_id == current_user["user_id"])
+        .where(LegalDocument.user_id == user_id)
         .order_by(LegalDocument.created_at.desc())
+        .offset(skip)
+        .limit(limit)
     )
     docs = result.scalars().all()
     return {
@@ -140,7 +151,10 @@ async def list_documents(
             }
             for d in docs
         ],
-        "total": len(docs),
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "has_more": (skip + limit) < total,
     }
 
 

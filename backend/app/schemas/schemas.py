@@ -54,7 +54,13 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=8)
+
+
 # ─── Chat Schemas ─────────────────────────────────────────
+
 
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=5000)

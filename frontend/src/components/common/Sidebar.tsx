@@ -10,10 +10,11 @@ const navItems = [
   { to: '/agents', icon: '🤖', label: 'Agents', badge: '8' },
   { to: '/analytics', icon: '📊', label: 'Analytics', badge: null },
   { to: '/lawyer-finder', icon: '🗺️', label: 'Lawyer Finder', badge: null },
+  { to: '/settings', icon: '⚙️', label: 'Settings', badge: null },
 ]
 
 export default function Sidebar() {
-  const { user, logout } = useAuthStore()
+  const { user, logout, theme, toggleTheme } = useAuthStore()
   const navigate = useNavigate()
 
   return (
@@ -56,6 +57,19 @@ export default function Sidebar() {
           <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981', animation: 'agentPulse 2s infinite' }} />
           <span style={{ fontSize: '0.7rem', color: '#34d399', fontWeight: 600 }}>8 Agents Online</span>
         </div>
+
+        {/* Theme toggle */}
+        <button
+          onClick={toggleTheme}
+          style={{
+            width: '100%', padding: '0.6rem 1rem', background: 'var(--bg-card)',
+            border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer',
+            color: 'var(--text-muted)', fontSize: '0.8rem', display: 'flex',
+            alignItems: 'center', gap: 8, marginBottom: '0.5rem'
+          }}
+        >
+          {theme === 'dark' ? '☀️' : '🌙'} {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+        </button>
 
         <div className="user-card" onClick={() => {}}>
           <div className="user-avatar">

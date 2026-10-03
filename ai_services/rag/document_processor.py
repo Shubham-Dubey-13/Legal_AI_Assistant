@@ -35,44 +35,102 @@ class DocumentProcessor:
         user_id: str,
         original_filename: str,
     ) -> Dict[str, Any]:
-        """Full document processing pipeline"""
+        """Full document processing pipeline with real PDF extraction and AI summary"""
+        import pdfplumber, re as _re, os as _os
+        from app.core.config import settings as _settings
 
         print(f"📄 Processing document: {original_filename}")
 
         # Step 1: Extract text
-        text, page_count = await self._extract_text(file_path)
-        print(f"✅ Extracted {len(text)} chars from {page_count} pages")
+        text = ""
+        page_count = 0
+        try:
+            with pdfplumber.open(file_path) as pdf:
+                page_count = len(pdf.pages)
+                for page in pdf.pages:
+                    extracted = page.extract_text() or ""
+                    text += extracted + "\n"
+        except Exception:
+            # Fallback to PyPDF2
+            try:
+                import PyPDF2
+                with open(file_path, 'rb') as f:
+                    reader = PyPDF2.PdfReader(f)
+                    page_count = len(reader.pages)
+                    for page in reader.pages:
+                        text += page.extract_text() or ""
+            except Exception as e:
+                text = f"Could not extract text from document: {e}"
 
-        # Step 2: Clean and normalize
-        cleaned_text = self._clean_text(text)
+        # Step 2: Detect IPC/BNS sections
+        ipc_sections = list(set(_re.findall(r'(?:Section|Sec\.?)\s*(\d+[A-Z]?)\s+IPC', text, _re.IGNORECASE)))
+        bns_sections = list(set(_re.findall(r'(?:Section|Sec\.?)\s*(\d+[A-Z]?)\s+BNS', text, _re.IGNORECASE)))
+        # Also find standalone patterns like "IPC 302" or "BNS 101"
+        ipc_sections += list(set(_re.findall(r'IPC\s*(\d+[A-Z]?)', text, _re.IGNORECASE)))
+        bns_sections += list(set(_re.findall(r'BNS\s*(\d+[A-Z]?)', text, _re.IGNORECASE)))
+        ipc_sections = list(set([f"IPC {s}" for s in ipc_sections]))[:10]
+        bns_sections = list(set([f"BNS {s}" for s in bns_sections]))[:10]
 
-        # Step 3: Section-aware chunking
-        chunks = self._chunk_document(cleaned_text, doc_id, original_filename)
-        print(f"✅ Created {len(chunks)} chunks")
+        # Step 3: Detect parties (simple NER)
+        petitioner = _re.search(r'(?:Petitioner|Plaintiff|Complainant)[:\s]+([A-Z][a-zA-Z\s]+)', text)
+        respondent = _re.search(r'(?:Respondent|Defendant|Accused)[:\s]+([A-Z][a-zA-Z\s]+)', text)
+        parties = {}
+        if petitioner:
+            parties['petitioner'] = petitioner.group(1).strip()[:50]
+        if respondent:
+            parties['respondent'] = respondent.group(1).strip()[:50]
 
-        # Step 4: Generate embeddings and index in ChromaDB
-        await self._index_chunks(chunks, doc_id)
-        print(f"✅ Indexed in ChromaDB")
+        # Step 4: Detect case type
+        case_type = 'General'
+        text_lower = text.lower()
+        if any(w in text_lower for w in ['murder', 'theft', 'robbery', 'ipc', 'bns', 'fir', 'bail']):
+            case_type = 'Criminal'
+        elif any(w in text_lower for w in ['divorce', 'custody', 'matrimonial', 'maintenance']):
+            case_type = 'Family'
+        elif any(w in text_lower for w in ['consumer', 'deficiency', 'refund', 'complaint']):
+            case_type = 'Consumer'
+        elif any(w in text_lower for w in ['property', 'land', 'lease', 'rent', 'eviction']):
+            case_type = 'Property'
+        elif any(w in text_lower for w in ['article', 'constitution', 'fundamental', 'writ']):
+            case_type = 'Constitutional'
 
-        # Step 5: Extract metadata (parallel)
-        sections_task = self._identify_legal_sections(cleaned_text)
-        entities_task = self._extract_entities(cleaned_text)
-        summary_task = self._generate_summary(cleaned_text)
+        # Step 5: AI summary using Gemini
+        summary = ""
+        if text.strip() and len(text) > 100:
+            try:
+                from langchain_google_genai import ChatGoogleGenerativeAI
+                from langchain_core.messages import HumanMessage, SystemMessage
+                llm = ChatGoogleGenerativeAI(
+                    google_api_key=_settings.GOOGLE_API_KEY,
+                    model=_settings.GEMINI_MODEL,
+                    temperature=0.1,
+                    max_output_tokens=512,
+                )
+                text_snippet = text[:3000]  # First 3000 chars
+                resp = await llm.ainvoke([
+                    SystemMessage(content="You are a legal document analyzer. Summarize the following Indian legal document in 3-4 sentences. Mention: (1) type of document, (2) parties involved, (3) key legal issue, (4) relief sought. Be concise."),
+                    HumanMessage(content=f"Document text:\n{text_snippet}")
+                ])
+                content = resp.content
+                if isinstance(content, list):
+                    summary = "".join(p.get('text', '') if isinstance(p, dict) else str(p) for p in content)
+                else:
+                    summary = str(content)
+            except Exception as e:
+                summary = f"Document processed ({page_count} pages). {case_type} law matter. Manual review recommended."
+        else:
+            summary = f"Document uploaded ({page_count} pages). Text extraction limited — may be a scanned image PDF."
 
-        sections, entities, summary = await asyncio.gather(
-            sections_task, entities_task, summary_task, return_exceptions=True
-        )
+        print(f"✅ Processing complete for {original_filename}")
 
         return {
-            "doc_id": doc_id,
-            "page_count": page_count,
-            "chunk_count": len(chunks),
-            "summary": summary if isinstance(summary, str) else "",
-            "ipc_sections": sections.get("ipc", []) if isinstance(sections, dict) else [],
-            "bns_sections": sections.get("bns", []) if isinstance(sections, dict) else [],
-            "parties": entities.get("parties", {}) if isinstance(entities, dict) else {},
-            "case_type": entities.get("case_type", "Unknown") if isinstance(entities, dict) else "Unknown",
-            "status": "completed",
+            'page_count': page_count,
+            'summary': summary,
+            'ipc_sections': ipc_sections,
+            'bns_sections': bns_sections,
+            'parties': parties,
+            'case_type': case_type,
+            'text_length': len(text),
         }
 
     async def _extract_text(self, file_path: str) -> tuple[str, int]:

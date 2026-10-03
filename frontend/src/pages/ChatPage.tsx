@@ -259,6 +259,18 @@ export default function ChatPage() {
     }
   }
 
+  // ── Share link ─────────────────────────────────────────────────────────
+  const handleShare = async () => {
+    if (!conversationId) return
+    try {
+      const { data } = await chatAPI.shareChatLink(conversationId)
+      await navigator.clipboard.writeText(data.share_url)
+      toast.success('🔗 Share link copied! Valid for 24 hours.')
+    } catch {
+      toast.error('Failed to generate share link. Try again.')
+    }
+  }
+
   // Toolbar button actions
   const toolActions: Record<string, () => void> = {
     '📄 Upload Doc':  () => navigate('/documents'),
@@ -399,17 +411,17 @@ export default function ChatPage() {
             </motion.div>
           )}
 
-          {/* ── Export button in chat header area ── */}
+          {/* ── Export + Share buttons in chat header area ── */}
           {conversationId && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0.4rem 0.5rem 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '0.4rem 0.5rem 0' }}>
               <button
                 onClick={handleExport}
                 title="Download conversation as report"
                 style={{
-                  background: 'rgba(245,158,11,0.1)',
-                  border: '1px solid rgba(245,158,11,0.3)',
+                  background: 'rgba(200,169,110,0.1)',
+                  border: '1px solid rgba(200,169,110,0.3)',
                   borderRadius: 'var(--radius-md)',
-                  color: '#f59e0b',
+                  color: 'var(--primary)',
                   fontSize: '0.75rem',
                   padding: '4px 10px',
                   cursor: 'pointer',
@@ -418,10 +430,29 @@ export default function ChatPage() {
                   gap: 5,
                 }}
               >
-                ⬇️ Export Report
+                ⬇️ Export
+              </button>
+              <button
+                onClick={handleShare}
+                title="Copy shareable link (valid 24h)"
+                style={{
+                  background: 'rgba(90,158,120,0.1)',
+                  border: '1px solid rgba(90,158,120,0.3)',
+                  borderRadius: 'var(--radius-md)',
+                  color: '#5a9e78',
+                  fontSize: '0.75rem',
+                  padding: '4px 10px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                }}
+              >
+                🔗 Share
               </button>
             </div>
           )}
+
 
           {messages.map((msg) => (
             <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
